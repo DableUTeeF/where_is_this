@@ -39,5 +39,4 @@ class RandomData(Dataset):
         return self.length
 
     def __getitem__(self, idx):
-        return torch.rand((3, 224, 224))
-
+        return torch.rand((3, 224, 224)) * 2 - 1

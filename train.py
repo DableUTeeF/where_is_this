@@ -1,5 +1,5 @@
 from models import WhereIsCLIP
-from dataset import ImagesData
+from dataset import RandomData
 import tensorflow as tf
 from torch.utils.data import DataLoader
 from timm.scheduler.cosine_lr import CosineLRScheduler
@@ -13,8 +13,8 @@ if __name__ == '__main__':
     num_workers = 4
     batch_size = 16
 
-    train_dataset = ImagesData('/media/palm/data/coco/images/train2017')
-    val_dataset = ImagesData('/media/palm/data/coco/images/val2017')
+    train_dataset = RandomData(160000)
+    val_dataset = RandomData(5200)
     train_loader = DataLoader(train_dataset,
                               batch_size=batch_size,
                               shuffle=True,

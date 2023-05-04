@@ -29,9 +29,6 @@ class RandomData(Dataset):
     def __init__(self, length, size=224):
         self.length = length
         self.transform = transforms.Compose([
-            transforms.Resize(512),
-            transforms.RandomCrop((size, size)),
-            transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ])
 
@@ -39,4 +36,4 @@ class RandomData(Dataset):
         return self.length
 
     def __getitem__(self, idx):
-        return torch.rand((3, 224, 224)) * 2 - 1
+        return self.transform(torch.rand((3, 224, 224), dtype=torch.float))

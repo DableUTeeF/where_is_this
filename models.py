@@ -1,6 +1,26 @@
 from torch import nn
 from transformers import AutoModel
 import torch
+from timm.models.vision_transformer import Block
+
+class Where2D(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.encoder_buffer = nn.Linear(768, 8192)
+        self.decoder_buffer = nn.Linear(8192, 768)
+        self.act = nn.GELU()
+        self.decoder = nn.Sequential(
+            Block(768, 8),
+            Block(768, 8),
+        )
+
+    def forward(self, input):
+        x = self.encoder_buffer(input['pooler_output'])
+        y = torch.where(x > 0, x, torch.zeros_like(x))
+        y = torch.where(x < 0, y, torch.ones_like(x))
+        z = self.act(self.decoder_buffer(self.act(y)).unsqueeze(1))
+        z = self.decoder(z)
+        return z
 
 
 class WhereIsCLIP(nn.Module):

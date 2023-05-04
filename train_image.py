@@ -6,6 +6,7 @@ from timm.scheduler.cosine_lr import CosineLRScheduler
 from torch import nn
 import torch
 import numpy as np
+import os
 
 if __name__ == '__main__':
     device = 'cuda'
@@ -13,8 +14,13 @@ if __name__ == '__main__':
     num_workers = 4
     batch_size = 16
 
-    train_dataset = ImagesData('/home/palm/data/coco/train2017')
-    val_dataset = ImagesData('/home/palm/data/coco/val2017')
+    if os.path.exists('/home/palm/data/coco'):
+        src = '/home/palm/data/coco'
+    else:
+        src = '/media/palm/data/coco/images'
+
+    train_dataset = ImagesData(f'{src}/train2017')
+    val_dataset = ImagesData(f'{src}/val2017')
     train_loader = DataLoader(train_dataset,
                               batch_size=batch_size,
                               shuffle=True,

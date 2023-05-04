@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     model = WhereIsCLIP()
     model = model.to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5, weight_decay=0.4)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.4)
     schedule = CosineLRScheduler(optimizer,
                                  t_initial=n_epochs*len(train_loader),
                                  t_mul=1,

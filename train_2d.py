@@ -90,9 +90,9 @@ if __name__ == '__main__':
             torch.save({'model': model.state_dict(),
                         'loss': all_losses / len(val_loader),
                         'optimizer': optimizer.state_dict()},
-                       f'cp/std_1/best.pth')
+                       f'cp/2d_1/best.pth')
 
         torch.save({'model': model.state_dict(),
                     'loss': all_losses / len(val_loader),
                     'optimizer': optimizer.state_dict()},
-                   f'cp/std_1/last.pth')
+                   f'cp/2d_1/last.pth')

@@ -7,9 +7,9 @@ class WhereIsCLIP(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder = AutoModel.from_pretrained('openai/clip-vit-base-patch32').vision_model
-        self.buffer = nn.Linear(768, 2048)
+        self.buffer = nn.Linear(768, 8192)
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(2048, 1024, 2, stride=2),  # 2
+            nn.ConvTranspose2d(8192, 1024, 2, stride=2),  # 2
             nn.BatchNorm2d(1024),
             nn.GELU(),
             nn.ConvTranspose2d(1024, 512, 2, stride=2),  # 4

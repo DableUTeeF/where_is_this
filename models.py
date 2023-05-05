@@ -82,36 +82,49 @@ class WhereIsCLIP(nn.Module):
 class SimPlerModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.backbone = mobilenetv3_small_075(True)
-        self.buffer = nn.Conv2d(432, 8192, 1)
+        self.backbone = mobilenetv3_small_075(pretrained=True, features_only=True)
+        # self.buffer = nn.Conv2d(432, 8192, 1)
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(8192, 1024, 2, stride=2),  # 7
-            nn.BatchNorm2d(1024),
-            nn.GELU(),
-            nn.ConvTranspose2d(1024, 512, 2, stride=2),  # 14
-            nn.BatchNorm2d(512),
-            nn.GELU(),
-            nn.ConvTranspose2d(512, 256, 2, stride=2),  # 56
-            nn.BatchNorm2d(256),
-            nn.GELU(),
-            nn.ConvTranspose2d(256, 128, 2, stride=2),  # 112
-            nn.BatchNorm2d(128),
-            nn.GELU(),
-            nn.ConvTranspose2d(128, 128, 2, stride=2),  # 224
-            nn.BatchNorm2d(128),
-            nn.GELU(),
-            nn.Conv2d(128, 3, 1),  # 224
+            nn.ConvTranspose2d(432, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(32, 3, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.Sigmoid()
         )
 
     def forward(self, inputs):
-        with torch.no_grad():
-            x = self.backbone.conv_stem(inputs)
-            x = self.backbone.bn1(x)
-            x = self.backbone.act1(x)
-            x = self.backbone.blocks(x)
-        y = self.buffer(x)
-        z = self.decoder(y)
+        # with torch.no_grad():
+        x = self.backbone(inputs)[4]
+        z = self.decoder(x)
         return z
+
+
+class ToyModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 16, 3, padding=1)
+        self.conv2 = nn.Conv2d(16, 4, 3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+
+        self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
+        self.t_conv2 = nn.ConvTranspose2d(16, 1, 2, stride=2)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.relu(self.conv1(x))
+        x = self.pool(x)
+        x = self.relu(self.conv2(x))
+        x = self.pool(x)
+
+        x = self.relu(self.t_conv1(x))
+        x = self.sigmoid(self.t_conv2(x))
+        return x
 
 
 if __name__ == '__main__':

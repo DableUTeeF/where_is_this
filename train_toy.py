@@ -20,7 +20,7 @@ if __name__ == '__main__':
     num_workers = 4
     batch_size = 16
     lenth = 2000
-    expname = 'toymnist'
+    expname = 'where_is_toymnist_sigmoid_1024'
 
     if os.path.exists('/home/palm/data/coco'):
         src = '/home/palm/data/coco'

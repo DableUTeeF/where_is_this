@@ -98,8 +98,8 @@ class SimPlerModel(nn.Module):
         )
 
     def forward(self, inputs):
-        # with torch.no_grad():
-        x = self.backbone(inputs)[4]
+        with torch.no_grad():
+            x = self.backbone(inputs)[4]
         z = self.decoder(x)
         return z
 
@@ -110,6 +110,8 @@ class ToyModel(nn.Module):
         self.conv1 = nn.Conv2d(1, 16, 3, padding=1)
         self.conv2 = nn.Conv2d(16, 4, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
+        self.buffer_e = nn.Conv2d(4, 1024, 1)
+        self.buffer_d = nn.Conv2d(1024, 4, 1)
 
         self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
         self.t_conv2 = nn.ConvTranspose2d(16, 1, 2, stride=2)
@@ -121,6 +123,11 @@ class ToyModel(nn.Module):
         x = self.pool(x)
         x = self.relu(self.conv2(x))
         x = self.pool(x)
+
+        x = self.sigmoid(self.buffer_e(x))
+        y = torch.where(x > 0.5, x, torch.zeros_like(x))
+        y = torch.where(x < 0.5, y, torch.ones_like(x))
+        x = self.relu(self.buffer_d(y))
 
         x = self.relu(self.t_conv1(x))
         x = self.sigmoid(self.t_conv2(x))

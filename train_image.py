@@ -38,14 +38,13 @@ if __name__ == '__main__':
     schedule = CosineLRScheduler(optimizer,
                                  t_initial=n_epochs*len(train_loader),
                                  t_mul=1,
-                                 lr_min=1e-8,
+                                 lr_min=1e-6,
                                  decay_rate=0.1,
-                                 warmup_t=int(n_epochs*0.1)*len(train_loader),
-                                 warmup_lr_init=1e-6,
+                                 warmup_t=1,
+                                 warmup_lr_init=1e-5,
                                  cycle_limit=1,
                                  t_in_epochs=False,
                                  noise_range_t=None,
-
                                  )
     min_loss = float('inf')
     criterion = nn.MSELoss()
@@ -63,7 +62,7 @@ if __name__ == '__main__':
             optimizer.step()
             printlog = [('loss', loss.cpu().detach().numpy())]
             progbar.update(idx + 1, printlog)
-            schedule.step(steps + 1)
+            # schedule.step(steps + 1)
             steps += 1
         model.eval()
         progbar = tf.keras.utils.Progbar(len(val_loader))

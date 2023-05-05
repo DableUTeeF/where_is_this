@@ -98,8 +98,8 @@ class SimPlerModel(nn.Module):
         )
 
     def forward(self, inputs):
-        with torch.no_grad():
-            x = self.backbone(inputs)[4]
+        # with torch.no_grad():
+        x = self.backbone(inputs)[4]
         z = self.decoder(x)
         return z
 

@@ -3,6 +3,7 @@ from transformers import AutoModel
 import torch
 from timm.models.vision_transformer import Block, Attention, Mlp
 from timm.models.mobilenetv3 import mobilenetv3_small_075
+from timm.models.resnet import Bottleneck
 
 class Where2D(nn.Module):
     def __init__(self):
@@ -84,8 +85,15 @@ class SimPlerModel(nn.Module):
         super().__init__()
         self.backbone = mobilenetv3_small_075(pretrained=True, features_only=True)
         # self.buffer = nn.Conv2d(432, 8192, 1)
+        self.encoder = nn.Sequential(
+            nn.Conv2d(432, 2048, 3, padding=1),
+            nn.BatchNorm2d(2048),
+            nn.GELU(),
+            Bottleneck(2048, 512),
+            Bottleneck(2048, 512),
+        )
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(432, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ConvTranspose2d(2048, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.ReLU(),
             nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.ReLU(),
@@ -100,6 +108,7 @@ class SimPlerModel(nn.Module):
     def forward(self, inputs):
         # with torch.no_grad():
         x = self.backbone(inputs)[4]
+        # x = self.encoder(x)
         z = self.decoder(x)
         return z
 

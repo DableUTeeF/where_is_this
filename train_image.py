@@ -36,12 +36,10 @@ if __name__ == '__main__':
     model = model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.4)
     schedule = CosineLRScheduler(optimizer,
-                                 t_initial=n_epochs*len(train_loader),
+                                 t_initial=n_epochs,
                                  t_mul=1,
                                  lr_min=1e-6,
                                  decay_rate=0.1,
-                                 warmup_t=1,
-                                 warmup_lr_init=1e-5,
                                  cycle_limit=1,
                                  t_in_epochs=False,
                                  noise_range_t=None,
@@ -62,8 +60,8 @@ if __name__ == '__main__':
             optimizer.step()
             printlog = [('loss', loss.cpu().detach().numpy())]
             progbar.update(idx + 1, printlog)
-            # schedule.step(steps + 1)
-            steps += 1
+        schedule.step(steps + 1)
+        steps += 1
         model.eval()
         progbar = tf.keras.utils.Progbar(len(val_loader))
         all_losses = []

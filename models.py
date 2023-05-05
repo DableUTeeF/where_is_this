@@ -1,16 +1,20 @@
 from torch import nn
 from transformers import AutoModel
 import torch
-from timm.models.vision_transformer import Block
+from timm.models.vision_transformer import Block, Attention, Mlp
+from timm.models.mobilenetv3 import mobilenetv3_small_075
 
 class Where2D(nn.Module):
     def __init__(self):
         super().__init__()
-        self.encoder_buffer = nn.Linear(768, 8192)
-        self.decoder_buffer = nn.Linear(8192, 768)
+        self.encoder_buffer = nn.Linear(768, 12800)
         self.act = nn.GELU()
         self.decoder = nn.Sequential(
-            Block(768, 8),
+            nn.LayerNorm(256),
+            Attention(256, num_heads=8, qkv_bias=False, attn_drop=0, proj_drop=0),
+            nn.LayerNorm(256),
+            Mlp(256, out_features=768),
+            nn.GELU(),
             Block(768, 8),
         )
 
@@ -18,7 +22,7 @@ class Where2D(nn.Module):
         x = self.encoder_buffer(input['pooler_output'])
         y = torch.where(x > 0, x, torch.zeros_like(x))
         y = torch.where(x < 0, y, torch.ones_like(x))
-        z = self.act(self.decoder_buffer(self.act(y)).unsqueeze(1))
+        z = self.act(y.view(-1, 50, 256))
         z = self.decoder(z)
         return z
 
@@ -75,6 +79,41 @@ class WhereIsCLIP(nn.Module):
         return z
 
 
+class SimPlerModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.backbone = mobilenetv3_small_075(True)
+        self.buffer = nn.Conv2d(432, 8192, 1)
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(8192, 1024, 2, stride=2),  # 7
+            nn.BatchNorm2d(1024),
+            nn.GELU(),
+            nn.ConvTranspose2d(1024, 512, 2, stride=2),  # 14
+            nn.BatchNorm2d(512),
+            nn.GELU(),
+            nn.ConvTranspose2d(512, 256, 2, stride=2),  # 56
+            nn.BatchNorm2d(256),
+            nn.GELU(),
+            nn.ConvTranspose2d(256, 128, 2, stride=2),  # 112
+            nn.BatchNorm2d(128),
+            nn.GELU(),
+            nn.ConvTranspose2d(128, 128, 2, stride=2),  # 224
+            nn.BatchNorm2d(128),
+            nn.GELU(),
+            nn.Conv2d(128, 3, 1),  # 224
+        )
+
+    def forward(self, inputs):
+        with torch.no_grad():
+            x = self.backbone.conv_stem(inputs)
+            x = self.backbone.bn1(x)
+            x = self.backbone.act1(x)
+            x = self.backbone.blocks(x)
+        y = self.buffer(x)
+        z = self.decoder(y)
+        return z
+
+
 if __name__ == '__main__':
-    model = WhereIsCLIP()
+    model = SimPlerModel()
     model(torch.zeros((2, 3, 224, 224)))

@@ -3,10 +3,13 @@ import torch
 from PIL import Image
 import torchvision.transforms as transforms
 from matplotlib import pyplot as plt
+import numpy as np
+plt.axis('off')
+
 
 if __name__ == '__main__':
     model = WhereIsCLIP()
-    checkpoint = torch.load('cp/std_1/best.pth')
+    checkpoint = torch.load('cp/std_2/best.pth')
     model.load_state_dict(checkpoint['model'])
     model.eval()
 
@@ -18,11 +21,12 @@ if __name__ == '__main__':
     ])
 
     image = Image.open('/home/palm/Pictures/Turkish-Angora-Cat-compressed-768x384.jpg').convert('RGB')
-    image = transform(image)
+    for i in range(20):
+        image2 = transform(image)
 
-    with torch.no_grad():
-        recon = model(image.unsqueeze(0))
-    recon2 = recon.cpu().detach().numpy()
-    plt.imshow(recon2[0, 0])
-    plt.figure()
-    plt.imshow(image[0])
+        with torch.no_grad():
+            recon = model(image2.unsqueeze(0))
+        recon2 = recon.cpu().detach().numpy()
+        plt.figure()
+        plt.imshow(np.hstack((image2[0], recon2[0, 0])))
+    plt.show()

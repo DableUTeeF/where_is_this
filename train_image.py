@@ -1,4 +1,4 @@
-from models import WhereIsCLIP
+from models import SimPlerModel
 from dataset import ImagesData
 import tensorflow as tf
 from torch.utils.data import DataLoader
@@ -32,7 +32,7 @@ if __name__ == '__main__':
                             num_workers=num_workers,
                             )
 
-    model = WhereIsCLIP()
+    model = SimPlerModel()
     model = model.to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0.4)
     schedule = CosineLRScheduler(optimizer,
@@ -82,9 +82,9 @@ if __name__ == '__main__':
             torch.save({'model': model.state_dict(),
                         'loss': all_losses / len(val_loader),
                         'optimizer': optimizer.state_dict()},
-                       f'cp/std_1/best.pth')
+                       f'cp/mnet_1/best.pth')
 
         torch.save({'model': model.state_dict(),
                     'loss': all_losses / len(val_loader),
                     'optimizer': optimizer.state_dict()},
-                   f'cp/std_1/last.pth')
+                   f'cp/mnet_1/last.pth')

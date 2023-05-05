@@ -20,15 +20,15 @@ if __name__ == '__main__':
     num_workers = 4
     batch_size = 16
     lenth = 2000
-    expname = 'where_is_toymnist_sigmoid_1024'
+    expname = 'where_is_toycifar_split'
 
     if os.path.exists('/home/palm/data/coco'):
         src = '/home/palm/data/coco'
     else:
         src = '/media/palm/data/coco/images'
-    train_data = datasets.MNIST(root='~/.pytorch/MNIST_data/', train=True,
+    train_data = datasets.CIFAR100(root='/home/palm/PycharmProjects/data', train=True,
                                 download=True, transform=transforms.ToTensor())
-    test_data = datasets.MNIST(root='~/.pytorch/MNIST_data/', train=False,
+    test_data = datasets.CIFAR100(root='/home/palm/PycharmProjects/data', train=False,
                                download=True, transform=transforms.ToTensor())
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=True, num_workers=num_workers)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         progbar = tf.keras.utils.Progbar(len(train_loader))
         for idx, (image, _) in enumerate(train_loader):
             image = image.to(device)
-            recon = model(image)
+            recon = model(image, epoch < 5)
             loss = criterion(recon, image)
             optimizer.zero_grad()
             loss.backward()

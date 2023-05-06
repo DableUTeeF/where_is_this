@@ -5,24 +5,55 @@ import torchvision.transforms as transforms
 import torch
 
 
+class FolderData(Dataset):
+    def __init__(self, path, size=224):
+        self.path = path
+        self.transform = transforms.Compose([
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ])
+        self.input_resize = transforms.Compose([
+            transforms.Resize(int(size*1.5)),
+            transforms.RandomCrop((size, size)),
+            transforms.ToTensor(),
+        ])
+        self.output_resize = transforms.Resize(size // 8)
+        self.data = []
+        for idx, folder in enumerate(sorted(os.listdir(path))):
+            for file in os.listdir(os.path.join(path, folder)):
+                self.data.append((folder, file, idx))
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        folder, file, cls = self.data[idx]
+        image = Image.open(os.path.join(self.path, folder, file)).convert('RGB')
+        image = self.input_resize(image)
+        # image = self.transform(image)
+        return image, self.output_resize(image), cls
+
+
 class ImagesData(Dataset):
     def __init__(self, path, size=224):
         self.path = path
         self.data = os.listdir(path)
         self.transform = transforms.Compose([
-            transforms.Resize(512),
-            transforms.RandomCrop((size, size)),
-            transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ])
+        self.input_resize = transforms.Compose([
+            transforms.Resize(int(size*1.5)),
+            transforms.RandomCrop((size, size)),
+            transforms.ToTensor(),
+        ])
+        self.output_resize = transforms.Resize(size // 8)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         image = Image.open(os.path.join(self.path, self.data[idx])).convert('RGB')
-        image = self.transform(image)
-        return image
+        image = self.input_resize(image)
+        return self.transform(image), self.output_resize(image)
 
 
 class RandomData(Dataset):

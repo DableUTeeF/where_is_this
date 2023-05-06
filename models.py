@@ -91,24 +91,20 @@ class SimPlerModel(nn.Module):
             nn.GELU(),
             Bottleneck(2048, 512),
             Bottleneck(2048, 512),
+            Bottleneck(2048, 512),
+            Bottleneck(2048, 512),
         )
         self.decoder = nn.Sequential(
             nn.ConvTranspose2d(2048, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.ReLU(),
-            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(32, 3, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ConvTranspose2d(256, 3, kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.Sigmoid()
         )
 
     def forward(self, inputs):
-        # with torch.no_grad():
-        x = self.backbone(inputs)[4]
-        # x = self.encoder(x)
+        with torch.no_grad():
+            x = self.backbone(inputs)[4]
+        x = self.encoder(x)
         z = self.decoder(x)
         return z
 
@@ -123,7 +119,9 @@ class ToyModel(nn.Module):
         self.buffer_d = nn.Conv2d(1024, 4, 1)
 
         self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
-        self.t_conv2 = nn.ConvTranspose2d(16, 1, 2, stride=2)
+        self.t_conv2 = nn.ConvTranspose2d(16, 3, 2, stride=2)
+
+        self.classifier = nn.Linear(256, 2)
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
@@ -134,20 +132,121 @@ class ToyModel(nn.Module):
         x = self.pool(x)
         return x
 
-    def forward(self, x, grad=True):
-        if grad:
-            x = self.encode(x)
-        else:
-            with torch.no_grad():
-                x = self.encode(x)
-            x = self.sigmoid(self.buffer_e(x))
-            y = torch.where(x > 0.5, x, torch.zeros_like(x))
-            y = torch.where(x < 0.5, y, torch.ones_like(x))
-            x = self.relu(self.buffer_d(y))
+    def where(self, x):
+        x = self.sigmoid(self.buffer_e(x))
+        y = torch.where(x > 0.5, x, torch.zeros_like(x))
+        y = torch.where(x < 0.5, y, torch.ones_like(x))
+        x = self.relu(self.buffer_d(y))
+        return x
 
+    def decode(self, x):
         x = self.relu(self.t_conv1(x))
         x = self.sigmoid(self.t_conv2(x))
         return x
+
+    def classify(self, x):
+        x = self.classifier(x.view(-1, 256))
+        return x
+
+    def forward(self, x, classify):
+        if classify:
+            x = self.encode(x)
+            return self.classify(x)
+        else:
+            with torch.no_grad():
+                x = self.encode(x)
+            x = self.where(x)
+            return self.decode(x)
+
+
+class BigToyModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(3, 64, 3, stride=2, padding=1),
+            nn.BatchNorm2d(64),
+            nn.GELU(),
+            nn.Conv2d(64, 128, 1),
+            nn.BatchNorm2d(128),
+            nn.GELU(),
+            Bottleneck(128, 32),
+            Bottleneck(128, 32),
+            Bottleneck(128, 32),
+            Bottleneck(128, 32),
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(128, 256, 3, stride=2, padding=1),
+            nn.BatchNorm2d(256),
+            nn.GELU(),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+        )
+        self.pool = nn.MaxPool2d(2, 2)
+        self.buffer_e = nn.Conv2d(256, 8192, 1)
+        self.buffer_d = nn.Sequential(
+            nn.Conv2d(8192, 256, 1),
+            nn.BatchNorm2d(256),
+        )
+
+        self.t_conv1 = nn.Sequential(
+            nn.ConvTranspose2d(256, 256, 2, stride=2),
+            nn.GELU(),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+            nn.ConvTranspose2d(256, 256, 2, stride=2),
+            nn.GELU(),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+        )
+        self.t_conv2 = nn.Sequential(
+            nn.ConvTranspose2d(256, 256, 2, stride=2),
+            nn.GELU(),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+            nn.ConvTranspose2d(256, 256, 2, stride=2),
+            nn.GELU(),
+            Bottleneck(256, 64),
+            nn.Conv2d(256, 3, 1),
+        )
+
+        self.classifier = nn.Linear(512, 2)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+    def decode(self, x):
+        x = self.t_conv1(x)
+        x = self.sigmoid(self.t_conv2(x))
+        return x
+
+    def encode(self, x):
+        x = self.relu(self.conv1(x))
+        x = self.pool(x)
+        x = self.relu(self.conv2(x))
+        x = self.pool(x)
+        return x
+
+    def where(self, x, hard_limit=False):
+        x = self.sigmoid(self.buffer_e(x))
+        if hard_limit:
+            y = torch.where(x > 0.5, x, torch.zeros_like(x))
+            x = torch.where(x < 0.5, y, torch.ones_like(x))
+        x = self.relu(self.buffer_d(x))
+        return x
+
+    def classify(self, x):
+        x = self.classifier(x.view(x.size(0), -1))
+        return x
+
+    def forward(self, x, classify, hard_limit):
+        if classify:
+            x = self.encode(x)
+            return self.classify(x)
+        else:
+            x = self.encode(x)
+            x = self.where(x, hard_limit)
+            return self.decode(x)
 
 
 if __name__ == '__main__':

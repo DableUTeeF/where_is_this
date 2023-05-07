@@ -184,10 +184,19 @@ class BigToyModel(nn.Module):
             Bottleneck(256, 64),
         )
         self.pool = nn.MaxPool2d(2, 2)
-        self.buffer_e = nn.Conv2d(256, 8192, 1)
+        self.buffer_e = nn.Sequential(
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+            nn.Conv2d(256, 8192, 1),
+        )
         self.buffer_d = nn.Sequential(
             nn.Conv2d(8192, 256, 1),
             nn.BatchNorm2d(256),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
+            Bottleneck(256, 64),
         )
 
         self.t_conv1 = nn.Sequential(
@@ -232,7 +241,7 @@ class BigToyModel(nn.Module):
         if hard_limit:
             y = torch.where(x > 0.5, x, torch.zeros_like(x))
             x = torch.where(x < 0.5, y, torch.ones_like(x))
-        x = self.relu(self.buffer_d(x))
+        x = self.buffer_d(x)
         return x
 
     def classify(self, x):

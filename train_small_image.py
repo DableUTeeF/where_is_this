@@ -17,7 +17,7 @@ from torchvision import datasets
 
 if __name__ == '__main__':
     device = 'cuda'
-    n_epochs = 15
+    n_epochs = 30
     warmup = 4
     num_workers = 4
     batch_size = 16
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     schedule = CosineLRScheduler(optimizer,
-                                 t_initial=n_epochs,
+                                 t_initial=n_epochs//3,
                                  t_mul=1,
                                  lr_min=1e-5,
                                  decay_rate=0.1,
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     losses = []
     steps = 0
     dst = '/media/palm/Data/wher_is_clip/output'
-    for epoch in range(n_epochs):
+    for epoch in range(n_epochs//3):
         print('Epoch:', epoch + 1)
         model.train()
         progbar = tf.keras.utils.Progbar(len(train_loader))
@@ -70,7 +70,7 @@ if __name__ == '__main__':
             progbar.update(idx + 1, printlog)
             steps += 1
         schedule.step(epoch + 1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     schedule = CosineLRScheduler(optimizer,
                                  t_initial=n_epochs,
                                  t_mul=1,
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         progbar = tf.keras.utils.Progbar(len(train_loader))
         for idx, (image, _, _) in enumerate(train_loader):
             image = image.to(device)
-            recon = model(image, False, epoch > 3)
+            recon = model(image, False, epoch > n_epochs // 3)
             loss = mse(recon, image)
             optimizer.zero_grad()
             loss.backward()
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             for idx, (image, _, _) in enumerate(train_loader):
                 image = image.to(device)
-                recon = model(image, False, epoch > 3)
+                recon = model(image, False, epoch > n_epochs // 3)
                 break
         recon2 = recon.cpu().detach().permute(0, 2, 3, 1).numpy()
         recon2 = recon2[:, :]

@@ -22,7 +22,7 @@ if __name__ == '__main__':
     num_workers = 4
     batch_size = 16
     lenth = 2000
-    expname = 'where_is_smalldogcat_pretrain'
+    expname = 'where_is_smalldogcat_train'
 
     if os.path.exists('/home/palm/data/Dogs_vs_Cats'):
         src = '/home/palm/data/Dogs_vs_Cats'
@@ -54,21 +54,32 @@ if __name__ == '__main__':
     losses = []
     steps = 0
     dst = '/media/palm/Data/wher_is_clip/output'
-    # for epoch in range(n_epochs):
-    #     print('Epoch:', epoch + 1)
-    #     model.train()
-    #     progbar = tf.keras.utils.Progbar(len(train_loader))
-    #     for idx, (image, _, labels) in enumerate(train_loader):
-    #         image = image.to(device)
-    #         labels = labels.cuda()
-    #         recon = model(image, True)
-    #         loss = crossentropy(recon, labels)
-    #         optimizer.zero_grad()
-    #         loss.backward()
-    #         optimizer.step()
-    #         printlog = [('loss', loss.cpu().detach().numpy())]
-    #         progbar.update(idx + 1, printlog)
-    #         steps += 1
+    for epoch in range(n_epochs):
+        print('Epoch:', epoch + 1)
+        model.train()
+        progbar = tf.keras.utils.Progbar(len(train_loader))
+        for idx, (image, _, labels) in enumerate(train_loader):
+            image = image.to(device)
+            labels = labels.cuda()
+            recon = model(image, True, False)
+            loss = crossentropy(recon, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            printlog = [('loss', loss.cpu().detach().numpy())]
+            progbar.update(idx + 1, printlog)
+            steps += 1
+        schedule.step(epoch + 1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    schedule = CosineLRScheduler(optimizer,
+                                 t_initial=n_epochs,
+                                 t_mul=1,
+                                 lr_min=1e-5,
+                                 decay_rate=0.1,
+                                 cycle_limit=1,
+                                 t_in_epochs=False,
+                                 noise_range_t=None,
+                                 )
     for epoch in range(n_epochs):
         print('Epoch:', epoch + 1)
         model.train()

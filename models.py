@@ -211,7 +211,7 @@ class BigToyModel(nn.Module):
             nn.Conv2d(256, 3, 1),
         )
 
-        self.classifier = nn.Linear(512, 2)
+        self.classifier = nn.Linear(1024, 2)
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
@@ -244,6 +244,7 @@ class BigToyModel(nn.Module):
             x = self.encode(x)
             return self.classify(x)
         else:
+            # with torch.no_grad():
             x = self.encode(x)
             x = self.where(x, hard_limit)
             return self.decode(x)

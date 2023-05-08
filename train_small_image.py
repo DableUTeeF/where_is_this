@@ -24,8 +24,8 @@ if __name__ == '__main__':
     lenth = 2000
     expname = 'where_is_smalldogcat_train'
 
-    if os.path.exists('/home/palm/data/Dogs_vs_Cats'):
-        src = '/home/palm/data/Dogs_vs_Cats'
+    if os.path.exists('/home/palm/data/dogs-vs-cats/'):
+        src = '/home/palm/data/dogs-vs-cats/'
     else:
         src = '/media/palm/data/Dogs_vs_Cats'
     train_dataset = FolderData(f'{src}/train', size=32)

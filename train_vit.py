@@ -25,7 +25,7 @@ def accuracy(text_embeds, image_embeds, labels):
 
 if __name__ == '__main__':
     device = 'cuda'
-    n_epochs = 20
+    n_epochs = 5
     warmup = 4
     num_workers = 4
     batch_size = 16
@@ -134,8 +134,8 @@ if __name__ == '__main__':
             optimizer.step()
             printlog = [('loss', loss.cpu().detach().numpy()),
                         ('std_acc', std_acc.cpu().detach().numpy()),
-                        ('buffer_acc', buffer_acc.cpu().detach().numpy()),
                         ('recon_acc', recon_acc.cpu().detach().numpy()),
+                        ('buffer_acc', buffer_acc.cpu().detach().numpy()),
                         ]
             progbar.update(idx + 1, printlog)
 
@@ -161,6 +161,7 @@ if __name__ == '__main__':
                 features = vision_model(image)['pooler_output']
                 features = visual_projection(features)
                 features = sigmoid(features)
+                std_acc = accuracy(prompts, features, cls)
                 prompts_ecd = model.encode(prompts)
                 _, prompts_ecd, _ = model.where(prompts_ecd, True)
                 x = model.encode(features)
@@ -175,8 +176,8 @@ if __name__ == '__main__':
             optimizer.step()
             printlog = [('loss', loss.cpu().detach().numpy()),
                         ('std_acc', std_acc.cpu().detach().numpy()),
-                        ('buffer_acc', buffer_acc.cpu().detach().numpy()),
                         ('recon_acc', recon_acc.cpu().detach().numpy()),
+                        ('buffer_acc', buffer_acc.cpu().detach().numpy()),
                         ]
             progbar.update(idx + 1, printlog)
 

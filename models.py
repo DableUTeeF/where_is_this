@@ -236,27 +236,32 @@ class BigToyModel(nn.Module):
         x = self.pool(x)
         return x
 
-    def where(self, x, hard_limit=False):
-        x = self.sigmoid(self.buffer_e(x))
+    def where(self, gt, hard_limit=False):
+        x = self.sigmoid(self.buffer_e(gt))
         if hard_limit:
             y = torch.where(x > 0.5, x, torch.zeros_like(x))
             x = torch.where(x < 0.5, y, torch.ones_like(x))
         x = self.buffer_d(x)
-        return x
+        return x, gt
 
     def classify(self, x):
         x = self.classifier(x.view(x.size(0), -1))
         return x
 
-    def forward(self, x, classify, hard_limit):
+    def forward(self, x, classify, hard_limit, iswhere=False):
         if classify:
             x = self.encode(x)
             return self.classify(x)
         else:
-            # with torch.no_grad():
-            x = self.encode(x)
-            x = self.where(x, hard_limit)
-            return self.decode(x)
+            with torch.no_grad():
+                x = self.encode(x)
+            if not iswhere:
+                x = self.where(x, hard_limit)
+                with torch.no_grad():
+                    x = self.decode(x)
+                return x
+            else:
+                return self.decode(x)
 
 
 if __name__ == '__main__':

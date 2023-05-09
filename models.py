@@ -28,6 +28,49 @@ class Where2D(nn.Module):
         return z
 
 
+class WhereIsFeatures(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.encoder = nn.Sequential(
+            Block(512, 8),
+            Block(512, 8),
+        )
+        self.decoder = nn.Sequential(
+            Block(512, 8),
+            Block(512, 8),
+        )
+        self.buffer_e = nn.Sequential(
+            Block(512, 8),
+            Block(512, 8),
+            Block(512, 8),
+            nn.Linear(512, 8192, 1),
+        )
+        self.buffer_d = nn.Sequential(
+            nn.Linear(8192, 512, 1),
+            nn.LayerNorm(512),
+            Block(512, 8),
+            Block(512, 8),
+            Block(512, 8),
+            nn.Sigmoid(),
+        )
+        self.sigmoid = nn.Sigmoid()
+
+    def where(self, gt, hard_limit=False):
+        x = self.buffer_e(gt)
+        ecd = self.sigmoid(x)
+        if hard_limit:
+            y = torch.where(x > 0.5, ecd, torch.zeros_like(ecd))
+            ecd = torch.where(x < 0.5, y, torch.ones_like(ecd))
+        x = self.buffer_d(ecd)
+        return x, ecd, gt
+
+    def encode(self, inputs):
+        return self.encoder(inputs.unsqueeze(1))
+
+    def decode(self, inputs):
+        return self.decoder(inputs)[:, 0]
+
+
 class WhereIsCLIP(nn.Module):
     def __init__(self):
         super().__init__()

@@ -38,6 +38,7 @@ class WhereIsFeatures(nn.Module):
         self.decoder = nn.Sequential(
             Block(512, 8),
             Block(512, 8),
+            nn.Sigmoid(),
         )
         self.buffer_e = nn.Sequential(
             Block(512, 8),

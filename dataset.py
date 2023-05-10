@@ -3,16 +3,30 @@ import os
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import torch
+import json
+
+
+class COCOCaptionData(Dataset):
+    def __init__(self, json_path):
+        data = json.load(open(json_path))
+        self.data = data['annotations']
+    
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        ann = self.data[idx]
+        return ann['caption'], ann['image_id']
 
 
 class FolderData(Dataset):
-    def __init__(self, path, size=224):
+    def __init__(self, path, size=224, mul=1.5):
         self.path = path
         self.transform = transforms.Compose([
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ])
         self.input_resize = transforms.Compose([
-            transforms.Resize(int(size*1.5)),
+            transforms.Resize(int(size*mul)),
             transforms.RandomCrop((size, size)),
             transforms.ToTensor(),
         ])
@@ -31,6 +45,14 @@ class FolderData(Dataset):
         image = self.input_resize(image)
         # image = self.transform(image)
         return image, self.output_resize(image), cls
+
+class FolderNameData(FolderData):
+    def __getitem__(self, idx):
+        folder, file, cls = self.data[idx]
+        image = Image.open(os.path.join(self.path, folder, file)).convert('RGB')
+        image = self.input_resize(image)
+        # image = self.transform(image)
+        return image, self.output_resize(image), folder
 
 
 class ImagesData(Dataset):

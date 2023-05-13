@@ -17,7 +17,19 @@ import numpy as np
 from torchvision import datasets
 
 
-def accuracy(text_embeds, image_embeds, labels):
+def clip_accuracy(text_embeds, image_embeds, labels):
+    logits_per_image = torch.matmul(text_embeds, image_embeds.t()).t()
+    probs = logits_per_image.softmax(dim=1)
+    return (probs.argmax(1) == labels).float().mean()
+
+
+def clip_tanh_accuracy(text_embeds, image_embeds, labels):
+    logits_per_image = torch.matmul(text_embeds*2-1, (image_embeds*2-1).t()).t()
+    probs = logits_per_image.softmax(dim=1)
+    return (probs.argmax(1) == labels).float().mean()
+
+
+def xor_acc(text_embeds, image_embeds, labels):
     logits_per_image = torch.matmul(text_embeds, image_embeds.t()).t()
     probs = logits_per_image.softmax(dim=1)
     return (probs.argmax(1) == labels).float().mean()
@@ -82,11 +94,11 @@ if __name__ == '__main__':
                 features = vision_model(image)['pooler_output']
                 features = visual_projection(features)
                 features = sigmoid(features)
-                std_acc = accuracy(prompts, features, cls)
+                std_acc = clip_accuracy(prompts, features, cls)
 
             x = model.encode(features)
             recon = model.decode(x)
-            recon_acc = accuracy(prompts, recon, cls)
+            recon_acc = clip_accuracy(prompts, recon, cls)
             loss = mse(recon, features)
             optimizer.zero_grad()
             loss.backward()
@@ -119,25 +131,25 @@ if __name__ == '__main__':
                 features = vision_model(image)['pooler_output']
                 features = visual_projection(features)
                 features = sigmoid(features)
-                std_acc = accuracy(prompts, features, cls)
+                std_acc = clip_accuracy(prompts, features, cls)
                 prompts_ecd = model.encode(prompts)
                 _, prompts_ecd, _ = model.where(prompts_ecd, False)
                 x = model.encode(features)
             x, ecd, gt = model.where(x, False)
-            buffer_acc = accuracy(prompts_ecd[:, 0], ecd[:, 0], cls)
-            with torch.no_grad():
-                recon = model.decode(x)
-                recon_acc = accuracy(prompts, recon, cls)
+            buffer_acc = clip_accuracy(prompts_ecd[:, 0], ecd[:, 0], cls)
+            buffer_acc2 = clip_tanh_accuracy(prompts_ecd[:, 0], ecd[:, 0], cls)
             loss = mse(x, gt)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             printlog = [('loss', loss.cpu().detach().numpy()),
                         ('std_acc', std_acc.cpu().detach().numpy()),
-                        ('recon_acc', recon_acc.cpu().detach().numpy()),
-                        ('buffer_acc', buffer_acc.cpu().detach().numpy()),
+                        ('tanh_acc', buffer_acc2.cpu().detach().numpy()),
+                        ('sigmoid_acc', buffer_acc.cpu().detach().numpy()),
                         ]
             progbar.update(idx + 1, printlog)
+        if progbar._values['tanh_acc'][0] / progbar._values['std_acc'][0] > 0.95:
+            break
 
     # autoencoder: buffer where
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -161,23 +173,24 @@ if __name__ == '__main__':
                 features = vision_model(image)['pooler_output']
                 features = visual_projection(features)
                 features = sigmoid(features)
-                std_acc = accuracy(prompts, features, cls)
+                std_acc = clip_accuracy(prompts, features, cls)
                 prompts_ecd = model.encode(prompts)
                 _, prompts_ecd, _ = model.where(prompts_ecd, True)
                 x = model.encode(features)
             x, ecd, gt = model.where(x, True)
-            buffer_acc = accuracy(prompts_ecd[:, 0], ecd[:, 0], cls)
-            with torch.no_grad():
-                recon = model.decode(x)
-                recon_acc = accuracy(prompts, recon, cls)
+            buffer_acc = clip_accuracy(prompts_ecd[:, 0], ecd[:, 0], cls)
+            buffer_acc2 = clip_tanh_accuracy(prompts_ecd[:, 0], ecd[:, 0], cls)
             loss = mse(x, gt)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             printlog = [('loss', loss.cpu().detach().numpy()),
                         ('std_acc', std_acc.cpu().detach().numpy()),
-                        ('recon_acc', recon_acc.cpu().detach().numpy()),
-                        ('buffer_acc', buffer_acc.cpu().detach().numpy()),
+                        ('tanh_acc', buffer_acc2.cpu().detach().numpy()),
+                        ('sigmoid_acc', buffer_acc.cpu().detach().numpy()),
                         ]
             progbar.update(idx + 1, printlog)
+    torch.save({'model': model.state_dict(),
+                'optimizer': optimizer.state_dict()},
+               f'cp/where_1024/last.pth')
 

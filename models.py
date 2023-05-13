@@ -29,7 +29,7 @@ class Where2D(nn.Module):
 
 
 class WhereIsFeatures(nn.Module):
-    def __init__(self):
+    def __init__(self, embed_dims=1024):
         super().__init__()
         self.encoder = nn.Sequential(
             Block(512, 8),
@@ -44,10 +44,10 @@ class WhereIsFeatures(nn.Module):
             Block(512, 8),
             Block(512, 8),
             Block(512, 8),
-            nn.Linear(512, 8192, 1),
+            nn.Linear(512, embed_dims, 1),
         )
         self.buffer_d = nn.Sequential(
-            nn.Linear(8192, 512, 1),
+            nn.Linear(embed_dims, 512, 1),
             nn.LayerNorm(512),
             Block(512, 8),
             Block(512, 8),

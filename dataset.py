@@ -8,7 +8,7 @@ import json
 
 class COCOCaptionData(Dataset):
     def __init__(self, json_path):
-        data = json.load(open(json_path))
+        data =  json.load(open(json_path))
         self.data = data['annotations']
     
     def __len__(self):

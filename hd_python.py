@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 
 HAMMING_DISTANCE = [
@@ -260,9 +261,13 @@ HAMMING_DISTANCE = [
     [8, 7, 7, 6, 7, 6, 6, 5, 7, 6, 6, 5, 6, 5, 5, 4, 7, 6, 6, 5, 6, 5, 5, 4, 6, 5, 5, 4, 5, 4, 4, 3, 7, 6, 6, 5, 6, 5, 5, 4, 6, 5, 5, 4, 5, 4, 4, 3, 6, 5, 5, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 3, 3, 2, 7, 6, 6, 5, 6, 5, 5, 4, 6, 5, 5, 4, 5, 4, 4, 3, 6, 5, 5, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 3, 3, 2, 6, 5, 5, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 3, 3, 2, 5, 4, 4, 3, 4, 3, 3, 2, 4, 3, 3, 2, 3, 2, 2, 1, 7, 6, 6, 5, 6, 5, 5, 4, 6, 5, 5, 4, 5, 4, 4, 3, 6, 5, 5, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 3, 3, 2, 6, 5, 5, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 3, 3, 2, 5, 4, 4, 3, 4, 3, 3, 2, 4, 3, 3, 2, 3, 2, 2, 1, 6, 5, 5, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 3, 3, 2, 5, 4, 4, 3, 4, 3, 3, 2, 4, 3, 3, 2, 3, 2, 2, 1, 5, 4, 4, 3, 4, 3, 3, 2, 4, 3, 3, 2, 3, 2, 2, 1, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0]
 ]
 HAMMING_DISTANCE = np.array(HAMMING_DISTANCE)
+HAMMING_DISTANCE_TORCH = torch.tensor(HAMMING_DISTANCE)
 
 def hamming_distance(byte_array1, byte_array2):
     return np.sum(np.array([HAMMING_DISTANCE[a, b] for a, b in zip(byte_array1, byte_array2)]))
+
+def torch_hd(byte_array1, byte_array2):
+    return torch.sum(torch.tensor([HAMMING_DISTANCE[a, b] for a, b in zip(byte_array1, byte_array2)]))
 
 
 if __name__ == '__main__':
